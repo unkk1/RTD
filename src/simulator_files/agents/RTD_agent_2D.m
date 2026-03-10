@@ -46,8 +46,8 @@ classdef RTD_agent_2D < agent
         
         %% reset
         function reset(A,state)
-            if nargin < 2
-                state = zeros(A.n_states,1) ;
+            if nargin < 2   % 判断是否传入了自定义初始状态state。
+                state = zeros(A.n_states,1) ; 
             end
             
             % do the reset
@@ -57,7 +57,7 @@ classdef RTD_agent_2D < agent
             A.input_time = 0 ;
             
             % reset the state
-            switch length(state)
+            switch length(state)  % 传入不同维度的状态，然后按照不同维度进行赋值
                 case A.n_states
                     A.state = state ;
                 case 2
@@ -158,58 +158,133 @@ classdef RTD_agent_2D < agent
         
         %% plotting
         function plot(A,~)
-            A.plot_at_time(A.time(end)) ;
+            A.plot_at_time(A.time(end)) ;   % 绘制车身矩形、箭头、已经行驶过的轨迹
             plot@agent(A,A.plot_footprint_color) ;
         end
         
-        function plot_at_time(A,t)
+        % function plot_at_time(A,t)   % 绘制车辆本身矩形和箭头，没有车轮；已经执行的轨迹
+        %     % compute footprint for plot
+        %     z_t = match_trajectories(t,A.time,A.state) ;  % 从时间序列A.time和状态序列A.state中，匹配时刻t对应的状态z_t
+        %     p_t = z_t(A.position_indices) ;    % 提取位置信息（x,y坐标）
+        %     h_t = z_t(A.heading_index) ;       % 提取航向角（朝向）
+        %     R_t = rotation_matrix_2D(h_t) ;    % 生成2D旋转矩阵（用于将智能体的“本地坐标系轮廓”旋转到“全局坐标系”）
+        %     fp_t = A.footprint_vertices(:,1:end-1) ;  % A.footprint_vertices是智能体的“本地轮廓顶点”（
+        %     N_fp = size(fp_t,2) ;     % 顶点数量
+        %     V_fp = R_t*fp_t + repmat(p_t,1,N_fp) ;  % 将本地轮廓旋转（R_t）并平移（p_t）到全局坐标系，得到实际轮廓V_fp
+        % 
+        %     % make arrow for plot
+        %     V_arrow = R_t*A.arrow_vertices + repmat(p_t,1,3) ;  % 旋转（R_t）并平移（p_t）到全局坐标系，得到实际箭头V_arrow
+        % 
+        %     % plot
+        %     if check_if_plot_is_available(A,'footprint')   % 检查轮廓绘图对象是否可用
+        %         A.plot_data.footprint.Vertices = V_fp' ;
+        %         A.plot_data.arrow.Vertices = V_arrow' ;
+        %     else  % 新建对象
+        %         % plot footprint   % 绘制轮廓（patch函数画多边形，设置填充色、边缘色、透明度）
+        %         fp_data = patch(V_fp(1,:),V_fp(2,:),A.plot_footprint_color,...
+        %             'EdgeColor',A.plot_footprint_edge_color,...
+        %             'FaceAlpha',A.plot_footprint_opacity,...
+        %             'EdgeAlpha',A.plot_footprint_edge_opacity) ;
+        % 
+        %         % plot arrow on footprint   % 绘制箭头（patch函数画多边形，与轮廓风格统一）
+        %         arrow_data = patch(V_arrow(1,:),V_arrow(2,:),A.plot_arrow_color,...
+        %             'EdgeColor',A.plot_arrow_color,...
+        %             'FaceAlpha',A.plot_arrow_opacity,...
+        %             'EdgeAlpha',A.plot_arrow_opacity) ;
+        % 
+        %         % save plot data   % 保存绘图对象，供后续复用
+        %         A.plot_data.footprint = fp_data ;
+        %         A.plot_data.arrow = arrow_data ;
+        %     end
+        % 
+        %     if A.plot_trajectory_at_time_flag   % 若开启轨迹绘制开关
+        %         % get the executed path up to the current time   % 提取截至时刻t的所有位置数据（已执行的路径）
+        %         X = A.state(A.position_indices,:) ;  % 所有时刻的位置（x,y）
+        %         T_log = A.time <= t ;   % 筛选出时间≤t的时刻（已执行部分）
+        %         X = X(:,T_log) ;    % 已执行轨迹的位置坐标（2×M矩阵，M为已执行步数）
+        % 
+        %         % plot it   % 绘制已经执行的轨迹
+        %         if check_if_plot_is_available(A,'trajectory')
+        %             A.plot_data.trajectory.XData = X(1,:) ;
+        %             A.plot_data.trajectory.YData = X(2,:) ;
+        %         end
+        %             traj_data = plot_path(X,'b-') ;
+        %             A.plot_data.trajectory = traj_data ;
+        %     end
+        % end
+
+        function plot_at_time(A,t)   % 绘制车辆本身矩形和箭头，没有车轮；已经执行的轨迹
             % compute footprint for plot
-            z_t = match_trajectories(t,A.time,A.state) ;
-            p_t = z_t(A.position_indices) ;
-            h_t = z_t(A.heading_index) ;
-            R_t = rotation_matrix_2D(h_t) ;
-            fp_t = A.footprint_vertices(:,1:end-1) ;
-            N_fp = size(fp_t,2) ;
-            V_fp = R_t*fp_t + repmat(p_t,1,N_fp) ;
-            
+            z_t = match_trajectories(t,A.time,A.state) ;  % 从时间序列A.time和状态序列A.state中，匹配时刻t对应的状态z_t
+            p_t = z_t(A.position_indices) ;    % 提取位置信息（x,y坐标）
+            h_t = z_t(A.heading_index) ;       % 提取航向角（朝向）
+            R_t = rotation_matrix_2D(h_t) ;    % 生成2D旋转矩阵（用于将智能体的“本地坐标系轮廓”旋转到“全局坐标系”）
+            fp_t = A.footprint_vertices(:,1:end-1) ;  % A.footprint_vertices是智能体的“本地轮廓顶点”（
+            N_fp = size(fp_t,2) ;     % 顶点数量
+            V_fp = R_t*fp_t + repmat(p_t,1,N_fp) ;  % 将本地轮廓旋转（R_t）并平移（p_t）到全局坐标系，得到实际轮廓V_fp
+
             % make arrow for plot
-            V_arrow = R_t*A.arrow_vertices + repmat(p_t,1,3) ;
-            
+            V_arrow = R_t*A.arrow_vertices + repmat(p_t,1,3) ;  % 旋转（R_t）并平移（p_t）到全局坐标系，得到实际箭头V_arrow
+
             % plot
-            if check_if_plot_is_available(A,'footprint')
-                A.plot_data.footprint.Vertices = V_fp' ;
-                A.plot_data.arrow.Vertices = V_arrow' ;
-            else
-                % plot footprint
-                fp_data = patch(V_fp(1,:),V_fp(2,:),A.plot_footprint_color,...
-                    'EdgeColor',A.plot_footprint_edge_color,...
-                    'FaceAlpha',A.plot_footprint_opacity,...
-                    'EdgeAlpha',A.plot_footprint_edge_opacity) ;
-                
-                % plot arrow on footprint
-                arrow_data = patch(V_arrow(1,:),V_arrow(2,:),A.plot_arrow_color,...
-                    'EdgeColor',A.plot_arrow_color,...
-                    'FaceAlpha',A.plot_arrow_opacity,...
-                    'EdgeAlpha',A.plot_arrow_opacity) ;
-                
-                % save plot data
-                A.plot_data.footprint = fp_data ;
-                A.plot_data.arrow = arrow_data ;
+            % ---- MOD: 只允许在 figure(9) 里画 footprint/arrow（左图保留蓝色，右图不再出现蓝色patch） ----
+            fnum = get(gcf,'Number') ;
+            allow_footprint_here = (fnum == 9) ;
+
+            if allow_footprint_here
+                if check_if_plot_is_available(A,'footprint')   % 检查轮廓绘图对象是否可用
+                    A.plot_data.footprint.Vertices = V_fp' ;
+                    A.plot_data.arrow.Vertices = V_arrow' ;
+                else  % 新建对象
+                    % plot footprint   % 绘制轮廓（patch函数画多边形，设置填充色、边缘色、透明度）
+                    fp_data = patch(V_fp(1,:),V_fp(2,:),A.plot_footprint_color,...
+                        'EdgeColor',A.plot_footprint_edge_color,...
+                        'FaceAlpha',A.plot_footprint_opacity,...
+                        'EdgeAlpha',A.plot_footprint_edge_opacity) ;
+
+                    % plot arrow on footprint   % 绘制箭头（patch函数画多边形，与轮廓风格统一）
+                    arrow_data = patch(V_arrow(1,:),V_arrow(2,:),A.plot_arrow_color,...
+                        'EdgeColor',A.plot_arrow_color,...
+                        'FaceAlpha',A.plot_arrow_opacity,...
+                        'EdgeAlpha',A.plot_arrow_opacity) ;
+
+                    % save plot data   % 保存绘图对象，供后续复用
+                    A.plot_data.footprint = fp_data ;
+                    A.plot_data.arrow = arrow_data ;
+                end
             end
-            
-            if A.plot_trajectory_at_time_flag
-                % get the executed path up to the current time
-                X = A.state(A.position_indices,:) ;
-                T_log = A.time <= t ;
-                X = X(:,T_log) ;
-                
-                % plot it
-                if check_if_plot_is_available(A,'trajectory')
+
+            if A.plot_trajectory_at_time_flag   % 若开启轨迹绘制开关
+                % get the executed path up to the current time   % 提取截至时刻t的所有位置数据（已执行的路径）
+                X = A.state(A.position_indices,:) ;  % 所有时刻的位置（x,y）
+                T_log = A.time <= t ;   % 筛选出时间≤t的时刻（已执行部分）
+                X = X(:,T_log) ;    % 已执行轨迹的位置坐标（2×M矩阵，M为已执行步数）
+
+                % plot it   % 绘制已经执行的轨迹
+                % if check_if_plot_is_available(A,'trajectory')
+                %     A.plot_data.trajectory.XData = X(1,:) ;
+                %     A.plot_data.trajectory.YData = X(2,:) ;
+                % else
+                %     traj_data = plot_path(X,'b-') ;
+                %     A.plot_data.trajectory = traj_data ;
+                % end
+
+                % if check_if_plot_is_available(A,'trajectory')
+                %     A.plot_data.trajectory.XData = X(1,:) ;
+                %     A.plot_data.trajectory.YData = X(2,:) ;
+                % end
+                % traj_data = plot_path(X,'b-') ;
+                % A.plot_data.trajectory = traj_data ;
+
+                if check_if_plot_is_available(A,'trajectory') && isgraphics(A.plot_data.trajectory)
+                    % 已经有线了：只更新数据（不会新建对象 -> 不闪）
                     A.plot_data.trajectory.XData = X(1,:) ;
                     A.plot_data.trajectory.YData = X(2,:) ;
-                end
+                else
+                    % 第一次：创建一次线对象（保持你原来的画法：蓝色实线）
                     traj_data = plot_path(X,'b-') ;
                     A.plot_data.trajectory = traj_data ;
+                end
             end
         end
     end

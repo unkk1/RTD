@@ -1,6 +1,7 @@
 function P_out = world_to_local(robot_pose, P_world)
 % P_out = world_to_local(robot_pose, P_world)
-%
+% 功能：根据机器人在世界坐标系中的位姿（x,y,heading），将世界坐标系中的点
+%       转换到机器人局部坐标系（以机器人为原点，机器人朝向为x轴）。
 % Given a robot's pose (x,y,heading) in the world frame, and points in the
 % world frame, shift and rotate these points to the local frame defined by
 % the robot's pose. The world points should either be passed in as a 2-by-N
